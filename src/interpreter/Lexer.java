@@ -77,7 +77,6 @@ public class Lexer {
       List<Tokenizer> tokenizers = new ArrayList<>();
       tokenizers.add(new Tokenizer("if", "IF_KW", TokenType.KEYWORD, new Integer(0), text));
       tokenizers.add(new Tokenizer("else", "ELSE_KW", TokenType.KEYWORD, new Integer(1), text));
-      // TODO: Какие приоритеты для while и do?
       tokenizers.add(new Tokenizer("while", "WHILE_KW", TokenType.KEYWORD, null, text));
       tokenizers.add(new Tokenizer("do", "DO_KW", TokenType.KEYWORD, null, text));
       tokenizers.add(new Tokenizer("\\(", "L_BR", TokenType.OPERATION, new Integer(0), text));

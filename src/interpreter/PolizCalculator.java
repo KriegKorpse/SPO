@@ -27,10 +27,10 @@ public class PolizCalculator {
          else if(TokenType.OPERATION == token.type) {
             int priority = token.getPriority();
 
-            if(st.empty() || (priority == 0) ) // (1) (2)
+            if(st.empty() || (priority == 0) ) 
                st.push(token);
             else {
-               if(priority > st.peek().getPriority()) // (3a)
+               if(priority > st.peek().getPriority()) 
                   st.push(token);
                else { // (3b)
                   while(!st.empty() && priority <= st.peek().getPriority())
@@ -87,7 +87,6 @@ public class PolizCalculator {
    private int CalcAssignOperation(Stack<Token> st) {
       int a = getValue(st.pop());           // правая часть
       varTable.setValue(st.pop().value, a); // левая часть, должна быть переменной
-      // результат остается в стеке, для унификации математической и логической операциями
       st.push(new Token("NUMBER", Integer.toString(a), TokenType.VALUE, null, -1, -1));
       return a;
    }
