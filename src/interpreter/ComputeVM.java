@@ -21,9 +21,11 @@ public class ComputeVM {
             ComputeAssignExpr(node);
          else if(nodeName.equals("if_expr"))
             ComputeIfExpr(node);
-         else if(node.isTerminal() && node.getTerminal().lexema.equals("L_S_BR"))
-            ; // пропуск фигурной скобки, если это блок
-         else if(node.isTerminal() && node.getTerminal().lexema.equals("R_S_BR"))
+         else if(nodeName.equals("while_expr"))
+            ComputeWhileExpr(node);
+         else if(nodeName.equals("method_call"))
+            MethodCalculator.Create(node, varTable).Calc();
+         else if(Is_S_BR(node))
             ; // пропуск фигурной скобки, если это блок
          else
             throw new InterpreterException("ComputeVM: не поддерживается нода " + nodeName);
@@ -37,30 +39,39 @@ public class ComputeVM {
    }
 
    private void ComputeIfExpr(AstNode node) {
-      Iterator<AstNode> childs = node.getChilds();
+      AstNode node_logical_expr = node.getChild("if_head").getChild("logical_expr");
       
-      AstNode temp_node;
-      Iterator<AstNode> temp_childs;
+      PolizCalculator logical_expr = new PolizCalculator(node_logical_expr.getChilds(), varTable);
+      System.out.println(logical_expr.getPolizString());
       
-      temp_node = childs.next();         // terminal IF_KW 
-      temp_node = childs.next();         // if_head
-      temp_childs = temp_node.getChilds();
-      temp_node = temp_childs.next();    // terminal L_BR
-      
-      AstNode node_logical_expr = temp_childs.next(); // logical_expr
-      PolizCalculator calc = new PolizCalculator(node_logical_expr.getChilds(), varTable);
-      System.out.println(calc.getPolizString());
-      boolean cond = 0 != calc.Calculate();
-      AstNode rootNode;
+      boolean cond = 0 != logical_expr.Calculate().getInteger();
+      AstNode rootNode = null;
       if(cond)
-         rootNode = childs.next(); // if_body
-      else {
-         temp_node = childs.next(); // if_body
-         temp_node = childs.next(); // terminal ELSE_KW
-         rootNode = childs.next(); // else_body
-      }
+         rootNode = node.getChild("if_body");
+      else 
+         rootNode = node.getChild("else_body");
       ComputeVM vm = new ComputeVM(rootNode, varTable);
       vm.Compute();
    }
 
+   private void ComputeWhileExpr(AstNode node) {
+      AstNode node_logical_expr = node.getChild("if_head").getChild("logical_expr");
+      
+      PolizCalculator logical_expr = new PolizCalculator(node_logical_expr.getChilds(), varTable);
+      System.out.println(logical_expr.getPolizString());
+      rootNode = node.getChild("if_body");
+      ComputeVM vm = new ComputeVM(rootNode, varTable);
+      
+      while(0 != logical_expr.Calculate().getInteger())
+         vm.Compute();
+   }
+   
+   private boolean Is_S_BR(AstNode node) {
+      if(node.isTerminal()) {
+         String lexema = node.getTerminal().lexema;
+         return lexema.equals("L_S_BR") || lexema.equals("R_S_BR");
+      }
+      return false;
+   }
+   
 }

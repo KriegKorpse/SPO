@@ -3,16 +3,15 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/D:/СПО/Interpreter/src/interpreter/Parser.java</file>
-            <file>file:/D:/СПО/Interpreter/src/interpreter/AstNode.java</file>
-            <file>file:/D:/СПО/Interpreter/src/interpreter/Exceptions.java</file>
-            <file>file:/D:/СПО/Interpreter/src/interpreter/Lexer.java</file>
-            <file>file:/D:/СПО/Interpreter/src/interpreter/VarTable.java</file>
-            <file>file:/D:/СПО/Interpreter/src/interpreter/TextReader.java</file>
-            <file>file:/D:/СПО/Interpreter/src/interpreter/ComputeVM.java</file>
-            <file>file:/D:/СПО/Interpreter/src/interpreter/Token.java</file>
-            <file>file:/D:/СПО/Interpreter/src/interpreter/Interpreter.java</file>
-            <file>file:/D:/СПО/Interpreter/src/interpreter/PolizCalculator.java</file>
+            <file>file:/D:/СПО_1/Interpreter/Interpreter/src/interpreter/VarValue.java</file>
+            <file>file:/D:/СПО_1/Interpreter/Interpreter/src/interpreter/Operations.java</file>
+            <file>file:/D:/СПО_1/Interpreter/Interpreter/src/interpreter/Lexer.java</file>
+            <file>file:/D:/СПО_1/Interpreter/Interpreter/src/interpreter/Parser.java</file>
+            <file>file:/D:/СПО_1/Interpreter/Interpreter/src/interpreter/AstNode.java</file>
+            <file>file:/D:/СПО_1/Interpreter/Interpreter/src/interpreter/ComputeVM.java</file>
+            <file>file:/D:/СПО_1/Interpreter/Interpreter/src/interpreter/PolizCalculator.java</file>
+            <file>file:/D:/СПО_1/Interpreter/Interpreter/src/interpreter/Interpreter.java</file>
+            <file>file:/D:/СПО_1/Interpreter/Interpreter/src/interpreter/List.java</file>
         </group>
     </open-files>
 </project-private>

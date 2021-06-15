@@ -14,10 +14,13 @@ class PosToLinePos {
    int absolutePos, lineNum, posNum, textSize;
 
    public PosToLinePos(String text) {
+      if(!text.substring(text.length()-2).equals("\r\n"))
+         text += "\r\n";
+      
       textSize = text.length();
       int pos0 = 0, pos1;
       lineBegins.add(pos0);
-      while( (pos1 = text.indexOf("\r\n", pos0)) != -1) {
+      while( (pos1 = text.indexOf("\n", pos0)) != -1) {
          pos0 = pos1 + 2;
          lineBegins.add(pos0);
       }
@@ -48,69 +51,70 @@ class PosToLinePos {
 }
 
 class Tokenizer {
-   public final Matcher matcher;
    public final String lexema;
    public final TokenType type;
    public final Integer priority;
+   private Pattern pattern;
+   private Matcher matcher;
 
-   public Tokenizer(String regex, String lexema, TokenType type, Integer priority, String text) {
-      this.matcher = Pattern.compile(regex).matcher(text);
+   public Tokenizer(String regex, String lexema, TokenType type, Integer priority) {
+      this.pattern = Pattern.compile(regex);
       this.lexema = lexema;
       this.type = type;
       this.priority = priority;
    }
+
+   public boolean find(String text) {
+      matcher = pattern.matcher(text);
+      return matcher.find();
+   }
+   
+   public Matcher getMatcher() {
+      return matcher;
+   }
 };
 
-enum TokenType {
-   OTHER,
-   KEYWORD,
-   OPERATION,
-   VALUE
-}
-
 public class Lexer {
-   private List<Token> tokens_array = new ArrayList<>();
+   private List<Token> tokens = new ArrayList<>();
 
    public Lexer(String text) {
       PosToLinePos posCalc = new PosToLinePos(text);
 
       List<Tokenizer> tokenizers = new ArrayList<>();
-      tokenizers.add(new Tokenizer("if", "IF_KW", TokenType.KEYWORD, new Integer(0), text));
-      tokenizers.add(new Tokenizer("else", "ELSE_KW", TokenType.KEYWORD, new Integer(1), text));
-      tokenizers.add(new Tokenizer("while", "WHILE_KW", TokenType.KEYWORD, null, text));
-      tokenizers.add(new Tokenizer("do", "DO_KW", TokenType.KEYWORD, null, text));
-      tokenizers.add(new Tokenizer("\\(", "L_BR", TokenType.OPERATION, new Integer(0), text));
-      tokenizers.add(new Tokenizer("\\)", "R_BR", TokenType.OPERATION, new Integer(1), text));
-      tokenizers.add(new Tokenizer("\\{", "L_S_BR", TokenType.OTHER, new Integer(0), text));
-      tokenizers.add(new Tokenizer("\\}", "R_S_BR", TokenType.OTHER, new Integer(1), text));
-      // Для значений приоритет не имеет смысла
-      tokenizers.add(new Tokenizer("[a-zA-Z_][a-zA-Z_0-9]*", "VAR", TokenType.VALUE, null, text));
-      tokenizers.add(new Tokenizer("[0-9]+(\\.[0-9]+)?", "NUMBER", TokenType.VALUE, null, text));
-      tokenizers.add(new Tokenizer("(?<!>)(?<!<)(?<!=)(?<!!)=(?!=)", "ASSIGN_OP", TokenType.OPERATION, new Integer(2), text)); // Операция присваивания
-      tokenizers.add(new Tokenizer("(\\*|/)", "MATH_OP", TokenType.OPERATION, new Integer(7), text)); // Математические операции
-      tokenizers.add(new Tokenizer("(\\+|-)", "MATH_OP", TokenType.OPERATION, new Integer(6), text)); // Математические операции
-      tokenizers.add(new Tokenizer("(\\|\\|)", "LOGICAL_OP", TokenType.OPERATION, new Integer(3), text)); //Логические операции
-      tokenizers.add(new Tokenizer("(&&)", "LOGICAL_OP", TokenType.OPERATION, new Integer(4), text)); //Логические операции
-      tokenizers.add(new Tokenizer("(>=|>|<=|<|==|!=)", "LOGICAL_OP", TokenType.OPERATION, new Integer(5), text)); //Логические операции
 
+      tokenizers.add(new Tokenizer("if(?=\\s*\\()",    "IF_KW",      TokenType.KEYWORD, null));
+      tokenizers.add(new Tokenizer("else(?=\\s*\\{)",  "ELSE_KW",    TokenType.KEYWORD, null));
+      tokenizers.add(new Tokenizer("while(?=\\s*\\()", "WHILE_KW",   TokenType.KEYWORD, null));
+      tokenizers.add(new Tokenizer("List(?=\\s*)",     "CLASSNAME",  TokenType.VALUE,   null));
+      tokenizers.add(new Tokenizer("add|reset|get|remove|gotoNext|gotoPrev(?=\\s*\\()", "METHOD_KW",  TokenType.KEYWORD, null));
+      
+      tokenizers.add(new Tokenizer("[a-zA-Z_][a-zA-Z_0-9]*(?=\\s*\\.)", "OBJ_VAR",  TokenType.OTHER, null));
+      tokenizers.add(new Tokenizer("[a-zA-Z_][a-zA-Z_0-9]*(?!\\s*\\.)", "VAR",      TokenType.VALUE, null));
+      tokenizers.add(new Tokenizer("[0-9]+(\\.[0-9]+)?",                "NUMBER",   TokenType.VALUE, null));
+
+      // Приоритет используется только для операций и скобок
+      tokenizers.add(new Tokenizer("\\(", "L_BR",   TokenType.OPERATION, new Integer(0)));
+      tokenizers.add(new Tokenizer("\\)", "R_BR",   TokenType.OPERATION, new Integer(1)));
+      tokenizers.add(new Tokenizer("\\{", "L_S_BR", TokenType.OTHER,     new Integer(0)));
+      tokenizers.add(new Tokenizer("\\}", "R_S_BR", TokenType.OTHER,     new Integer(1)));
+      
+      tokenizers.add(new Tokenizer("\\*|/",           "MATH_OP",    TokenType.OPERATION, new Integer(7))); // Математические операции
+      tokenizers.add(new Tokenizer("\\+|-",           "MATH_OP",    TokenType.OPERATION, new Integer(6))); // Математические операции
+      tokenizers.add(new Tokenizer("\\|\\|",          "LOGICAL_OP", TokenType.OPERATION, new Integer(3))); //Логические операции
+      tokenizers.add(new Tokenizer("&&",              "LOGICAL_OP", TokenType.OPERATION, new Integer(4))); //Логические операции
+      tokenizers.add(new Tokenizer(">=|>|<=|<|==|!=", "LOGICAL_OP", TokenType.OPERATION, new Integer(5))); //Логические операции
+      tokenizers.add(new Tokenizer("=", "ASSIGN_OP", TokenType.OPERATION, new Integer(2))); // Операция присваивания
+      
+      tokenizers.add(new Tokenizer(",", "COMMA",     TokenType.OTHER, null)); // Запятая в параметрах методов
+ 
       for(Tokenizer tokenizer : tokenizers) {
-         while(tokenizer.matcher.find())
-         {
-            boolean skip = false;
-            if(tokenizer.lexema.equals("VAR"))
-            {
-               if(tokenizer.matcher.group().equals("if")|
-                  tokenizer.matcher.group().equals("while")|
-                  tokenizer.matcher.group().equals("else")|
-                  tokenizer.matcher.group().equals("do"))
-                  skip = true;
-            }
-            if(!skip) {
-               posCalc.calculate(tokenizer.matcher.start());
-               tokens_array.add(new Token(tokenizer.lexema, tokenizer.matcher.group(),
-                                          tokenizer.type, tokenizer.priority,
-                                          posCalc.getLineNum(), posCalc.getPosNum()));
-            }
+         while(tokenizer.find(text)) {
+            Matcher matcher = tokenizer.getMatcher();
+            posCalc.calculate(matcher.start());
+            tokens.add(new Token(tokenizer.lexema, matcher.group(), 
+                                 tokenizer.type, tokenizer.priority,
+                                 posCalc.getLineNum(), posCalc.getPosNum()));
+            text = SetSpaces(text, matcher.start(), matcher.group().length());
          }
       }
 
@@ -126,10 +130,18 @@ public class Lexer {
             }
          }
       };
-      Collections.sort(tokens_array, comparator);
+      Collections.sort(tokens, comparator);
    }
 
    public Iterator<Token> getIterator() {
-      return tokens_array.iterator();
+      return tokens.iterator();
    }
+   
+   private static String SetSpaces(String text, int pos, int count) {
+      String spaces = "";
+      for(int i = 0; i < count; i++)
+         spaces += " ";
+      return text.substring(0, pos) + spaces + text.substring(pos + count);
+   }
+   
 }

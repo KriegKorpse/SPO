@@ -9,6 +9,15 @@ import java.util.Stack;
 public class PolizCalculator {
    private List<Token> polizArr = new ArrayList<>();
    private VarTable varTable;
+   
+   private static Token getToken(AstNode node, VarTable varTable) {
+      if(node.isTerminal())
+         return node.getTerminal();
+      else if(node.getName().equals("method_call"))
+         return new Token(MethodCalculator.Create(node, varTable));
+      else
+         throw new InterpreterException("PolizCalculator: нода не может быть рассчитана " + node.getName());
+   } 
 
    public PolizCalculator(Iterator<AstNode> nodes, VarTable varTable) throws InterpreterException {
       this.varTable = varTable;
@@ -16,12 +25,8 @@ public class PolizCalculator {
       Stack<Token> st = new Stack<>();
 
       while(nodes.hasNext()) {
-         AstNode node = nodes.next();
-         if(!node.isTerminal())
-            throw new InterpreterException("PolizCalculator: вложенные выражения не поддерживаются");
+         Token token = getToken(nodes.next(), varTable);
          
-         Token token = node.getTerminal();
-
          if     (TokenType.VALUE == token.type)
             polizArr.add(token);
          else if(TokenType.OPERATION == token.type) {
@@ -32,7 +37,7 @@ public class PolizCalculator {
             else {
                if(priority > st.peek().getPriority()) 
                   st.push(token);
-               else { // (3b)
+               else { 
                   while(!st.empty() && priority <= st.peek().getPriority())
                      addToPoliz(st.pop());
                   st.push(token);
@@ -51,11 +56,14 @@ public class PolizCalculator {
    public String getPolizString() {
       String result = "";
       for(Token t : polizArr)
-         result += t.value;
+         if(t.lexema.equals("FUNCTOR"))
+            result = result + t.func.toString() + " ";
+         else      
+            result = result + t.value + " ";
       return result;
    }
 
-   public int Calculate() throws InterpreterException {
+   public VarValue Calculate() throws InterpreterException {
       Stack<Token> st = new Stack<>();
       
       for(Token token : polizArr) {
@@ -75,82 +83,40 @@ public class PolizCalculator {
       
       // В стеке должно остаться одно значение - результат последней операции
       Token result = st.pop();
-      if(!result.lexema.equals("NUMBER"))
-         throw new InterpreterException("Какая-то ошибка. Стек после вычислений не содержит результата");
+      if(result.type != TokenType.VALUE)
+         throw new InterpreterException("Ошибка. Стек после вычислений не содержит результата");
 
       if(!st.empty())
-         throw new InterpreterException("Какая-то ошибка. Стек после вычислений не пуст");
+         throw new InterpreterException("Ошибка. Стек после вычислений не пуст");
       
-      return Integer.valueOf(result.value);
+      return result.getVarValue(varTable);
    }
    
-   private int CalcAssignOperation(Stack<Token> st) {
-      int a = getValue(st.pop());           // правая часть
-      varTable.setValue(st.pop().value, a); // левая часть, должна быть переменной
-      st.push(new Token("NUMBER", Integer.toString(a), TokenType.VALUE, null, -1, -1));
-      return a;
+   private VarValue CalcAssignOperation(Stack<Token> st) {
+      VarValue right = st.pop().getVarValue(varTable); // правая часть (число, переменная или имя класса)
+      String leftVarName = st.pop().value;
+      varTable.setValue(leftVarName, right);           // левая часть, должна быть переменной
+      if(right.isObject())
+         st.push(new Token("VAR", leftVarName, TokenType.VALUE, null, -1, -1));
+      else
+         st.push(new Token("NUMBER", right.toString(), TokenType.VALUE, null, -1, -1));
+      return right;
    }
    
-   private int CalcMathOperation(String op, Stack<Token> st) {
-      int b = getValue(st.pop());
-      int a = getValue(st.pop());
-
-      switch(op) {
-         case "+":
-            a = a + b;
-            break;
-         case "-":
-            a = a - b;
-            break;
-         case "*":
-            a = a * b;
-            break;
-         case "/":
-            a = a / b;
-            break;
-         default:
-            throw new InterpreterException("PolizCalculator: операция " + op + " не является математической");
-      }
-
-      st.push(new Token("NUMBER", Integer.toString(a), TokenType.VALUE, null, -1, -1));
-      return a;
+   private VarValue CalcMathOperation(String op, Stack<Token> st) {
+      Token b = st.pop();
+      Token a = st.pop();
+      VarValue r = Operations.calcMath(a.getVarValue(varTable), b.getVarValue(varTable), op);
+      st.push(new Token("NUMBER", r.toString(), TokenType.VALUE, null, -1, -1));
+      return r;
    }
 
-   private int CalcLogicalOperation(String op, Stack<Token> st) {
-      int b = getValue(st.pop());
-      int a = getValue(st.pop());
-
-      switch(op) {
-         case "&&":
-            a = Bool2Int(Int2Bool(a) && Int2Bool(b));
-            break;
-         case "||":
-            a = Bool2Int(Int2Bool(a) || Int2Bool(b));
-            break;
-         case "<":
-            a = Bool2Int(a < b);
-            break;
-         case "<=":
-            a = Bool2Int(a <= b);
-            break;
-         case ">":
-            a = Bool2Int(a > b);
-            break;
-         case ">=":
-            a = Bool2Int(a >= b);
-            break;
-         case "==":
-            a = Bool2Int(a == b);
-            break;
-         case "!=":
-            a = Bool2Int(a != b);
-            break;
-         default:
-            throw new InterpreterException("PolizCalculator: операция " + op + " не является логической");
-      }
-
-      st.push(new Token("NUMBER", Integer.toString(a), TokenType.VALUE, null, -1, -1));
-      return a;
+   private VarValue CalcLogicalOperation(String op, Stack<Token> st) {
+      Token b = st.pop();
+      Token a = st.pop();
+      VarValue r = Operations.calcLogical(a.getVarValue(varTable), b.getVarValue(varTable), op);
+      st.push(new Token("NUMBER", r.toString(), TokenType.VALUE, null, -1, -1));
+      return r;
    }
 
    private void addToPoliz(Token t) {
@@ -158,24 +124,5 @@ public class PolizCalculator {
       if(!isBracket)
          polizArr.add(t);
    }
-
-   private int getValue(Token token) {
-      if     (token.lexema.equals("NUMBER"))
-         return Integer.valueOf(token.value);
-      else if(token.lexema.equals("VAR"))
-         return varTable.getValue(token.value);
-      else
-         throw new InterpreterException("PolizCalculator: значение может быть получено только для токена с типом VALUE. " + token.toString() + " не может быть получено ");
-   }
-   
-   private boolean Int2Bool(int a) {
-      return a != 0;
-   }
-   private int Bool2Int(boolean a) {
-      if(a)
-         return 1;
-      else
-         return 0;
-   }
-   
+  
 }

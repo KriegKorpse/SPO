@@ -12,11 +12,14 @@ public class Interpreter {
          System.out.println("--- Program text ----");
 //         TextReader reader = new TextReader("test_math.txt");
 //         TextReader reader = new TextReader("test_logical.txt");
-//         TextReader reader = new TextReader("test_if.txt");
-//         TextReader reader = new TextReader("test_while.txt");
+//         TextReader reader = new TextReader("test_if_1.txt");
+//        TextReader reader = new TextReader("test_if.txt");
+         TextReader reader = new TextReader("test_while.txt");
 //         TextReader reader = new TextReader("err_test_brackets.txt");
 //         TextReader reader = new TextReader("err_test_KW.txt");
-           TextReader reader = new TextReader("err_test_operation.txt");
+//           TextReader reader = new TextReader("err_test_operation.txt");
+//         TextReader reader = new TextReader("test_list.txt");
+
          String text = reader.getText();
          System.out.println(text);
 

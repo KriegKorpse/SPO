@@ -1,17 +1,22 @@
 lang         -> expr*
-expr         -> assign_expr | if_expr | while_expr
-assign_expr  -> VAR ASSIGN_OP value (0P value)*
-value        -> NUMBER | VAR
+expr         -> assign_expr | if_expr | while_expr | obj_expr
+assign_expr  -> VAR ASSIGN_OP value (0P value)* | VAR ASSIGN_OP CLASSNAME
+value        -> NUMBER | VAR | OBJ_VAR method_call
+obj_expr     -> OBJ_VAR method_call
 
 if_expr -> IF_KW if_head block (ELSE_KW block)?
 if_head -> L_BR logical_expr R_BR
 block -> L_S_BR expr* R_S_BR
-
 while_expr -> WHILE_KW if_head block
 
 logical_expr -> value (LOGICAL_0P value)*
+math_expr -> value (MATH_0P value)*
+
+method_call -> get|remove|gotoNext|gotoPrev|add|reset args
+args -> L_BR (math_expr COMMA)* R_BR
 
 FIRST_SET assign_expr: {VAR}
 FIRST_SET if_expr: {IF_KW}
-FIRST_SET expr: {VAR, IF_KW}
+FIRST_SET while_expr: {WHILE_KW}
+FIRST_SET obj_expr: {OBJ_VAR}
 

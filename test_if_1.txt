@@ -1,0 +1,17 @@
+a = 0
+c = 0
+iff = 1
+if(a == 0) {
+   if(c >= 1) {
+      iff = 1
+   }
+   else {
+        iff = 3
+   } 
+} 
+else {
+   if(d <= 1) { 
+      iff = 2
+   } 
+}
+

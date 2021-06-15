@@ -1,0 +1,32 @@
+b = 4
+lst1 = List
+lst1.add(10 + b)
+lst1.add(2.78)
+lst1.add(24)
+
+c = 0
+lst1.reset()
+while(0 != lst1.gotoNext()) {
+   c = c + lst1.get()
+}
+
+lst2 = List
+lst1.reset()
+while(0 != lst1.gotoPrev()) {
+   lst2.add(lst1.get())
+}
+
+lst2.reset()
+lst2.gotoNext() a0 = lst2.get()
+lst2.gotoNext() a1 = lst2.get()
+lst2.gotoNext() a2 = lst2.get()
+
+lst1.reset();
+lst1.gotoNext()
+lst1.gotoNext()
+lst1.remove()
+lst1.reset()
+lst1.gotoNext() d0 = lst1.get()
+lst1.gotoNext() d1 = lst1.get()
+
+

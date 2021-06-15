@@ -42,4 +42,46 @@ public class AstNode {
     public Token getTerminal() {
        return token;
     }
+
+   public Token findChildToken(String tokenLexema) {
+      AstNode node = null;
+      boolean found = false;
+      Iterator<AstNode> childs = getChilds();
+      while(!found && childs.hasNext()) {
+         node = childs.next();
+         found = node.isTerminal() && node.getTerminal().lexema.equals(tokenLexema);
+      }
+
+      if(!found)
+         return null;
+      return node.getTerminal();
+   }
+
+   public Token getChildToken(String tokenLexema) {
+      Token t = findChildToken(tokenLexema);
+       if(null == t)
+          throw new InterpreterException("Среди потомков ноды " + name + " не найден токен " + tokenLexema);
+       return t;
+    }
+    
+   public AstNode findChild(String nodeName) {
+      AstNode node = null;
+      boolean found = false;
+      Iterator<AstNode> childs = getChilds();
+      while(!found && childs.hasNext()) {
+         node = childs.next();
+         found = node.getName().equals(nodeName);
+      }
+
+      if(!found)
+         return null;
+      return node;
+   }
+   
+   public AstNode getChild(String nodeName) {
+      AstNode node = findChild(nodeName);
+      if(null == node)
+         throw new InterpreterException("Среди потомков ноды " + name + " не найдена нода с именем " + nodeName);
+      return node;
+   }
 }

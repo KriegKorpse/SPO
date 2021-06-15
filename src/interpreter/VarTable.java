@@ -1,33 +1,38 @@
 package interpreter;
 
 import java.util.HashMap;
-import java.util.Map.Entry;
+import java.util.LinkedHashMap;
+import java.util.Set;
 
 public class VarTable {
-   private final HashMap<String, Integer> table = new HashMap<>();
-   private final int defIntVal = 0;
+   private final LinkedHashMap<String, VarValue> table = new LinkedHashMap<>();
 
    public void addVariable(String varName) {
       if(!table.containsKey(varName))
-         table.put(varName, defIntVal);
+         table.put(varName, new VarValue());
    }
 
-   public void setValue(String varName, int varValue) {
-      if(!table.containsKey(varName))
+   public void setValue(String varName, VarValue varValue) {
+      if(!isExist(varName))
          throw new InterpreterException("Не найдена переменная с именем " + varName);
       table.put(varName, varValue);
    }
 
-   public int getValue(String varName) {
-      Integer value = table.get(varName);
+   public VarValue getValue(String varName) {
+      VarValue value = table.get(varName);
       if(null == value)
          throw new InterpreterException("Не найдена переменная с именем " + varName);
       return value;
    }
 
+   public boolean isExist(String varName) {
+      return table.containsKey(varName);
+   }
+
    public void Print() {
-      for(Entry entry: table.entrySet()) {
-        System.out.println(entry.getKey() + " = " + entry.getValue());
+      Set<String> keys = table.keySet();
+      for(String key: keys) {
+        System.out.println(key + " = " + getValue(key).toString());
       }
    }
 }

@@ -66,7 +66,7 @@ public class Parser {
       return node;
    }
 
-   // expr -> assign_expr | if_expr
+   // expr -> assign_expr | if_expr | while_expr | obj_expr
    private AstNode expr() {
       if      (currentToken.lexema.equals("VAR"))
          return assign_expr();
@@ -74,16 +74,25 @@ public class Parser {
          return if_expr();
       else if (currentToken.lexema.equals("WHILE_KW"))
          return while_expr();
-      else
+      else if (currentToken.lexema.equals("OBJ_VAR"))
+         return method_call();
+      else 
          throw new InterpreterException(currentToken);
    }
 
-   // assign_expr -> VAR ASSIGN_OP value (0P value)* // TODO: как в продукциях учитываются скобки?
+   // assign_expr -> VAR ASSIGN_OP value (0P value)* | VAR ASSIGN_OP CLASSNAME
+   // TODO: как в продукциях учитываются скобки?
    private AstNode assign_expr() {
       AstNode node = new AstNode("assign_expr");
 
       match("VAR", node);
       match("ASSIGN_OP", node);
+
+      if(currentToken.lexema.equals("CLASSNAME")) {
+         match("CLASSNAME", node);
+         return node;
+      }
+
       match_value(node);
 
       boolean stop = false;
@@ -108,12 +117,15 @@ public class Parser {
       return node;
    }
 
-   // value -> NUMBER | VAR
+   // value -> NUMBER | VAR | OBJ_VAR method_call
    private void match_value(AstNode node) {
       if      (currentToken.lexema.equals("NUMBER"))
          match("NUMBER", node);
       else if (currentToken.lexema.equals("VAR"))
          match("VAR", node);
+      else if(currentToken.lexema.equals("OBJ_VAR")) {
+         node.addChild(method_call());
+      }
       else
          throw new InterpreterException(currentToken);
    }
@@ -163,6 +175,27 @@ public class Parser {
 
       return node;
    }
+   
+   // math_expr -> value (MATH_0P value)*
+   private AstNode math_expr() {
+      AstNode node = new AstNode("math_expr");
+
+      match_value(node);
+
+      boolean stop = false;
+      while(!stop) {
+         if(currentToken.lexema.equals("MATH_OP"))
+            match("MATH_OP", node);
+         else
+            stop = true;
+
+         if(!stop)
+            match_value(node);
+      }
+
+      return node;
+   }
+   
 
    //while_expr -> WHILE_KW if_head if_body
    private AstNode while_expr() {
@@ -186,6 +219,30 @@ public class Parser {
       match("R_S_BR", node);
       return node;
    }
+   
+   // method_call -> get|remove|gotoNext|gotoPrev|add|reset args
+   private AstNode method_call() {
+      AstNode node = new AstNode("method_call");
+      match("OBJ_VAR", node);
+      match("METHOD_KW", node);
+      node.addChild(args());
+      return node;
+   }
+
+   // args -> L_BR (math_expr COMMA)* R_BR
+   private AstNode args() {
+      AstNode node = new AstNode("args");
+
+      match("L_BR", node);
+      while(!currentToken.lexema.equals("R_BR")) {
+         node.addChild(math_expr());
+         if(!currentToken.lexema.equals("R_BR"))
+            match("COMMA", node);
+      }
+      match("R_BR", node);
+      
+      return node;
+   }
 
    private void match(String terminal, AstNode node) {
       if(!currentToken.lexema.equals(terminal))
@@ -195,6 +252,12 @@ public class Parser {
       // Если это переменная, то добавляем её в таблицу;
       if(currentToken.lexema.equals("VAR"))
          varTable.addVariable(currentToken.value);
+
+      // Если это переменная - имя объекта, то проверяем, есть ли она в таблице (добавляется при инициализации);
+      if(currentToken.lexema.equals("OBJ_VAR")) {
+         if(!varTable.isExist(currentToken.value))
+            throw new InterpreterException("Не инициализирована объектная переменная " + currentToken.value + " " + currentToken.toString());
+      }
       
       count_BR.Count(terminal);
       count_S_BR.Count(terminal);
